@@ -43,14 +43,19 @@ export const deletePost = (req, res) => {
 // }
 
 export const getPosts = async (req, res) => {
-  const {refreshToken} = req.cookies
-  const tokenData = await tokenService.findToken(refreshToken)
-  const link= toId(tokenData.userId)
-  Post
-    .find({link:link})
-    .sort({ createdAt: -1 })
-    .then(posts => res.send(posts))
-    .catch((error) => handleError(res, error));
+  try {
+    const {refreshToken} = req.cookies
+    const tokenData = await tokenService.findToken(refreshToken)
+    const link= toId(tokenData.userId)
+    Post
+      .find({link:link})
+      .sort({ createdAt: -1 })
+      .then(posts => res.send(posts))
+      .catch((error) => handleError(res, error));
+  } catch (error) {
+    handleError(res, error)
+  }
+
 }
 
 

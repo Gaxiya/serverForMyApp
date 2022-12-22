@@ -5,8 +5,9 @@ import { UserRoom } from './../models/room.js';
 import User from './../models/user.js';
 import tokenService from "./tokenService.js";
 import Room_dto from './../dtos/room_dto.js';
+import Message from "../models/message.js";
+import { removeFile } from "./fileService.js";
 class RoomService{
-
     async getAllRooms(userId){
         try {
             const rooms = await Room.find({'users.userId':`${toId(userId)}`}).populate('users')
@@ -17,9 +18,12 @@ class RoomService{
             return null
         }
     }
-    async getRoom(roomId){
+    async getRoom(roomId,userId){
         try {
             const room = await Room.findOne({roomId:roomId})
+            if(userId){
+                return new Room_dto(room,userId)
+            }
         return room
         } catch (error) {
             return 0 
@@ -50,17 +54,18 @@ class RoomService{
         return room_dto
     }
     async deleteRoom(){}
-    async disconnet(roomId,userName){
-        let room = await Room.findOne({roomId:roomId})
-        const index =room.users.findIndex((user)=>user.userName==`${userName}`)
-        room.users[index].socketId=''
-        room.users[index].isOnline={
-            active:false,
-            lastActive:new Date()
-        }
-        
-        room.save()
-        return room
+    async disconnet(userId){
+        const rooms = await Room.find({'users.userId':`${toId(userId)}`}).populate('users')
+        rooms.forEach((r)=>{
+            const index =r.users.findIndex((user)=>user.userId==`${userId}`)
+            r.users[index].socketId=''
+            r.users[index].isOnline={
+                active:false,
+                lastActive:new Date()
+            }
+        })
+        rooms.save()
+        return rooms
     }
     async addUnreadenMessage(roomId,messageId,senderId,unreadenMessages){
         try {
@@ -97,6 +102,31 @@ class RoomService{
         } catch (error) {
             console.log(error);
             return null
+        }
+    }
+    async setRoomName(roomId,roomName,tokenData){
+        try {
+            const room = await Room.findOne({roomId:roomId})
+            room.roomName = roomName
+            room.save()
+            return new Room_dto(room,tokenData.userId)
+        } catch (error) {
+            
+        }
+    }
+    async leaveTheRoom (roomId,userId){
+        try {
+            const room = await Room.findOne({roomId:roomId})
+            room.users=room.users.filter((user)=>`${user.userId}`!=`${userId}`)
+            if(room.users.length==0){
+                await Message.deleteMany({ roomId:roomId })
+                removeFile(`/${roomId}`)
+                return null
+            }
+            room.save()
+            return new Room_dto(room,tokenData.userId)
+        } catch (error) {
+            
         }
     }
 }

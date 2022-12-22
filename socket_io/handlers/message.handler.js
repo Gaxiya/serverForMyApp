@@ -55,7 +55,15 @@ socket.on('message:add',async (message,roomId) => {
     updateMessageList(roomId)
     updateUnreadenMessages(roomId)
 })
-
+socket.on('message:edit', async (message,roomId)=>{
+    const{messageId,text} = message
+    const message=await Message.findOneAndUpdate({messageId:messageId},
+        {textOrPathToFile:text},
+        {new:true})
+    const index = messages[roomId].findIndex(m=>`${m.messageId}`===`${messageId}`)
+    messages[roomId][index]=message
+    updateMessageList(roomId)
+})
 
 socket.on('message:remove', (message,roomId) => {
     const { messageId, messageType, textOrPathToFile } = message
@@ -72,5 +80,16 @@ socket.on('message:remove', (message,roomId) => {
 
     updateMessageList(roomId)
 })
+socket.on('dialogs:leave',async ({roomId,deletedRoom})=>{
+    socket.leave(roomId)
+    if(deletedRoom){
+        delete messages[roomId]
+        delete RoomsUnreadenMessages[roomId]
+        return;
+    }
+    delete RoomsUnreadenMessages[roomId][socket.userId]
+    updateUnreadenMessages(roomId)
+})
+
 }
 

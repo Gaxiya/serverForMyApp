@@ -12,8 +12,9 @@ const { userName } = socket.handshake.query
 if(rooms!==null){
     socket.roomIds = rooms.map(r=>r.roomId)
     socket.userName = userName
+    socket.userId= userId
     socket.join(rooms.map(r=>r.roomId))
-    console.log(socket.rooms);
+    console.log(`Socket: ${socket.id} Rooms :`,socket.rooms);
     userHandlers(io, socket)
     messageHandlers(io, socket)
 }
